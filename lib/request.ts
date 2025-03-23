@@ -15,6 +15,7 @@ export const request = createAlova({
   },
   responded: (response) => response.json(),
   cacheLogger: false,
+  cacheFor: null,
 });
 
 export default request;
