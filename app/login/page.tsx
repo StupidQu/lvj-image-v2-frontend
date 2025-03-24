@@ -41,7 +41,7 @@ export default async function Login({ searchParams }: Props) {
   const decodedError = error ? decodeURIComponent(error) : undefined;
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="flex items-center justify-center min-h-[calc(100vh-120px)] p-4">
       <form action={login} className="w-full max-w-[600px]">
         <Card>
           <CardHeader>
