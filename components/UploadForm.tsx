@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { UploadRecord } from "@/type/UploadRecord";
 import { buildLink } from "@/lib/buildLink";
-import Turnstile from "react-turnstile";
+import Turnstile, { useTurnstile } from "react-turnstile";
 import { Loader2 } from "lucide-react";
 
 type UploadResult = {
@@ -41,6 +41,7 @@ export default function UploadForm({ TurnstileKey }: Props) {
   const [showResults, setShowResults] = useState(false);
 
   const tokenRef = useRef<string | null>(null);
+  const turnstile = useTurnstile();
 
   // 计算基于图片数量的容器高度
   useEffect(() => {
@@ -225,6 +226,8 @@ export default function UploadForm({ TurnstileKey }: Props) {
     } finally {
       // 无论成功或失败，都将上传状态设置为false
       setIsUploading(false);
+      // 重置 Turnstile
+      turnstile.reset();
     }
   };
 
