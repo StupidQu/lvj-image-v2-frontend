@@ -41,8 +41,8 @@ export default async function Login({ searchParams }: Props) {
   const decodedError = error ? decodeURIComponent(error) : undefined;
 
   return (
-    <div className="w-[600px] mx-auto mt-[300px]">
-      <form action={login}>
+    <div className="flex items-center justify-center min-h-screen p-4">
+      <form action={login} className="w-full max-w-[600px]">
         <Card>
           <CardHeader>
             <CardTitle>登录至 LVJ Images</CardTitle>

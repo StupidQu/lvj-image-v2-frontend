@@ -58,9 +58,12 @@ export default async function User({ searchParams }: Prop) {
       <h1 className="text-2xl font-semibold mb-2">
         {profile.name!} 的上传记录
       </h1>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {history.uploads.map((record) => (
-          <div key={record.id} className="border border-dashed p-2 flex gap-2">
+          <div
+            key={record.id}
+            className="border border-dashed p-2 md:flex md:gap-2"
+          >
             <Image
               src={record.url}
               alt={record.id.toString()}
@@ -69,9 +72,8 @@ export default async function User({ searchParams }: Prop) {
               style={{
                 width: "100px",
                 height: "auto",
-                marginTop: "auto",
-                marginBottom: "auto",
               }}
+              className="mb-2 md:mt-auto md:mb-auto"
             />
             <div className="grow">
               <Tabs defaultValue="shortMarkdown">
