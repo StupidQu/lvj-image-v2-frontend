@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { UploadRecord } from "@/type/UploadRecord";
 import { buildLink } from "@/lib/buildLink";
+import Turnstile from "react-turnstile";
+import { Loader2 } from "lucide-react";
 
 type UploadResult = {
   file: File;
@@ -20,18 +22,25 @@ type UploadResult = {
   data?: UploadRecord;
 };
 
+type Props = {
+  TurnstileKey: string;
+};
+
 // 创建一个工具函数来合并 classNames
 const cn = (...inputs: Parameters<typeof clsx>) => {
   return twMerge(clsx(inputs));
 };
 
-export default function UploadForm() {
+export default function UploadForm({ TurnstileKey }: Props) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [containerHeight, setContainerHeight] = useState("h-[300px]");
   const [showResults, setShowResults] = useState(false);
+
+  const tokenRef = useRef<string | null>(null);
 
   // 计算基于图片数量的容器高度
   useEffect(() => {
@@ -137,6 +146,15 @@ export default function UploadForm() {
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
 
+    // 检查 Turnstile Token
+    if (!tokenRef.current) {
+      toast.error("请先完成人机验证");
+      return;
+    }
+
+    // 设置上传状态为true
+    setIsUploading(true);
+
     // 设置所有文件为上传中状态
     setUploadResults((prev) =>
       prev.map((result) => ({ ...result, status: "pending" as const }))
@@ -146,6 +164,9 @@ export default function UploadForm() {
     selectedFiles.forEach((file) => {
       formData.append("file", file);
     });
+
+    // 添加 Turnstile Token
+    formData.append("turnstileToken", tokenRef.current);
 
     try {
       const response = await fetch("/api/upload", {
@@ -188,6 +209,10 @@ export default function UploadForm() {
 
       // 上传成功后清空拖拽区域内显示的图片
       setSelectedFiles([]);
+      // 重置文件输入框的值
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
       // 处理网络错误
       setUploadResults((prev) =>
@@ -197,6 +222,9 @@ export default function UploadForm() {
           message: "网络错误，请重试",
         }))
       );
+    } finally {
+      // 无论成功或失败，都将上传状态设置为false
+      setIsUploading(false);
     }
   };
 
@@ -204,11 +232,19 @@ export default function UploadForm() {
     setSelectedFiles([]);
     setUploadResults([]);
     setShowResults(false);
+    // 重置文件输入框的值
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
     setUploadResults((prev) => prev.filter((_, i) => i !== index));
+    // 重置文件输入框的值，以便可以再次选择相同的文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   // 获取成功上传的结果
@@ -308,11 +344,28 @@ export default function UploadForm() {
         )}
       </div>
 
+      <Turnstile
+        sitekey={TurnstileKey}
+        onVerify={(token) => {
+          tokenRef.current = token;
+        }}
+      />
+
       <div className="flex mt-4 gap-2">
-        <Button onClick={handleUpload} disabled={selectedFiles.length === 0}>
-          确认上传
+        <Button
+          onClick={handleUpload}
+          disabled={selectedFiles.length === 0 || isUploading}
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              上传中...
+            </>
+          ) : (
+            "确认上传"
+          )}
         </Button>
-        <Button variant="outline" onClick={handleClear}>
+        <Button variant="outline" onClick={handleClear} disabled={isUploading}>
           清空
         </Button>
       </div>

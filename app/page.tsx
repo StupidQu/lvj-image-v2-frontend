@@ -16,7 +16,9 @@ export default async function Home() {
 
   return (
     <div>
-      <UploadForm />
+      <UploadForm
+        TurnstileKey={process.env.CLOUDFLARE_TURNSTILE_SITE_KEY || ""}
+      />
     </div>
   );
 }
