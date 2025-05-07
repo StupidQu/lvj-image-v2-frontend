@@ -3,4 +3,6 @@ export type UploadRecord = {
   sha256: string;
   url: string;
   size: number;
+
+  useShortlink?: boolean;
 };

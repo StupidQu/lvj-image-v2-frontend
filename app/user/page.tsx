@@ -76,27 +76,36 @@ export default async function User({ searchParams }: Prop) {
               className="mb-2 md:mt-auto md:mb-auto"
             />
             <div className="grow">
-              <Tabs defaultValue="shortMarkdown">
+              <Tabs defaultValue={record.useShortlink === false ? "markdown" : "shortMarkdown"}>
                 <TabsList>
                   <TabsTrigger value="markdown">Markdown</TabsTrigger>
                   <TabsTrigger value="link">链接</TabsTrigger>
-                  <TabsTrigger value="shortMarkdown">短Markdown</TabsTrigger>
-                  <TabsTrigger value="shortLink">短链接</TabsTrigger>
+                  {(record.useShortlink === undefined || record.useShortlink === true) && (
+                    <>
+                      <TabsTrigger value="shortMarkdown">短Markdown</TabsTrigger>
+                      <TabsTrigger value="shortLink">短链接</TabsTrigger>
+                    </>
+                  )}
                 </TabsList>
-                {(
-                  ["markdown", "link", "shortMarkdown", "shortLink"] as const
-                ).map((tab) => (
-                  <TabsContent key={tab} value={tab}>
-                    <div className="flex gap-2">
-                      <Input
-                        className="w-full"
-                        value={buildLink(record, tab, hd.get("host")!)}
-                        readOnly
-                      />
-                      <CopyButton record={record} tab={tab} />
-                    </div>
-                  </TabsContent>
-                ))}
+                {(() => {
+                  type TabType = "markdown" | "link" | "shortMarkdown" | "shortLink";
+                  const tabs: TabType[] = ["markdown", "link"];
+                  if (record.useShortlink === undefined || record.useShortlink === true) {
+                    tabs.push("shortMarkdown", "shortLink");
+                  }
+                  return tabs.map((tab) => (
+                    <TabsContent key={tab} value={tab}>
+                      <div className="flex gap-2">
+                        <Input
+                          className="w-full"
+                          value={buildLink(record, tab, hd.get("host")!)}
+                          readOnly
+                        />
+                        <CopyButton record={record} tab={tab} />
+                      </div>
+                    </TabsContent>
+                  ));
+                })()}
               </Tabs>
             </div>
           </div>

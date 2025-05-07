@@ -14,6 +14,7 @@ import { UploadRecord } from "@/type/UploadRecord";
 import { buildLink } from "@/lib/buildLink";
 import Turnstile, { useTurnstile } from "react-turnstile";
 import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type UploadResult = {
   file: File;
@@ -36,6 +37,7 @@ export default function UploadForm({ TurnstileKey }: Props) {
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [useShortlink, setUseShortlink] = useState(true); // 默认启用短链接
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [containerHeight, setContainerHeight] = useState("h-[300px]");
   const [showResults, setShowResults] = useState(false);
@@ -168,6 +170,9 @@ export default function UploadForm({ TurnstileKey }: Props) {
 
     // 添加 Turnstile Token
     formData.append("turnstileToken", tokenRef.current);
+
+    // 添加短链接访问选项
+    formData.append("useShortlink", String(useShortlink));
 
     try {
       const response = await fetch("/api/upload", {
@@ -347,6 +352,20 @@ export default function UploadForm({ TurnstileKey }: Props) {
         )}
       </div>
 
+      <div className="flex items-center space-x-2 mt-2">
+        <Checkbox 
+          id="useShortlink" 
+          checked={useShortlink} 
+          onCheckedChange={(checked) => setUseShortlink(checked === true)}
+        />
+        <label
+          htmlFor="useShortlink"
+          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        >
+          启用短链访问
+        </label>
+      </div>
+
       <Turnstile
         sitekey={TurnstileKey}
         onVerify={(token) => {
@@ -395,22 +414,21 @@ export default function UploadForm({ TurnstileKey }: Props) {
                   }}
                 />
                 <div className="grow">
-                  <Tabs defaultValue="shortMarkdown">
+                  <Tabs defaultValue={(result.data?.useShortlink ?? true) ? "shortMarkdown" : "markdown"}>
                     <TabsList>
                       <TabsTrigger value="markdown">Markdown</TabsTrigger>
                       <TabsTrigger value="link">链接</TabsTrigger>
-                      <TabsTrigger value="shortMarkdown">
-                        短Markdown
-                      </TabsTrigger>
-                      <TabsTrigger value="shortLink">短链接</TabsTrigger>
+                        {result.data?.useShortlink && (
+                        <>
+                          <TabsTrigger value="shortMarkdown">
+                          短Markdown
+                          </TabsTrigger>
+                          <TabsTrigger value="shortLink">短链接</TabsTrigger>
+                        </>
+                        )}
                     </TabsList>
                     {(
-                      [
-                        "markdown",
-                        "link",
-                        "shortMarkdown",
-                        "shortLink",
-                      ] as const
+                      ["markdown", "link", ...(result.data?.useShortlink ? ["shortMarkdown", "shortLink"] : [])]
                     ).map((tab) => (
                       <TabsContent key={tab} value={tab}>
                         <div className="flex gap-2">
@@ -418,7 +436,7 @@ export default function UploadForm({ TurnstileKey }: Props) {
                             className="w-full"
                             value={buildLink(
                               result.data!,
-                              tab,
+                              tab as any,
                               window.location.origin
                             )}
                             readOnly
@@ -429,7 +447,7 @@ export default function UploadForm({ TurnstileKey }: Props) {
                               navigator.clipboard.writeText(
                                 buildLink(
                                   result.data!,
-                                  tab,
+                                  tab as any,
                                   window.location.origin
                                 )
                               );
