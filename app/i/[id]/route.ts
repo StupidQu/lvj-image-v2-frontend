@@ -1,5 +1,4 @@
 import request from "@/lib/request";
-import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -8,6 +7,14 @@ export async function GET(
 ) {
   const id = (await params).id;
   const response = await request.Get<{ url?: string }>(`/i/${id}`);
-
-  redirect(response.url ? response.url : "/");
+  
+  const redirectUrl = response.url || "/";
+  
+  // Return a response with cache-control header to cache for 1 day
+  return NextResponse.redirect(redirectUrl, {
+    headers: {
+      'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+    },
+    status: 307
+  });
 }
