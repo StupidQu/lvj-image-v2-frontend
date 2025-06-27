@@ -4,7 +4,6 @@ import { buildLink } from "@/lib/buildLink";
 import request from "@/lib/request";
 import { UploadRecord } from "@/type/UploadRecord";
 import { headers } from "next/headers";
-import Image from "next/image";
 import CopyButton from "./CopyButton";
 import {
   PaginationContent,
@@ -64,11 +63,9 @@ export default async function User({ searchParams }: Prop) {
             key={record.id}
             className="border border-dashed p-2 md:flex md:gap-2"
           >
-            <Image
+            <img
               src={record.url}
               alt={record.id.toString()}
-              width={100}
-              height={0}
               style={{
                 width: "100px",
                 height: "auto",
@@ -76,21 +73,35 @@ export default async function User({ searchParams }: Prop) {
               className="mb-2 md:mt-auto md:mb-auto"
             />
             <div className="grow">
-              <Tabs defaultValue={record.useShortlink === false ? "markdown" : "shortMarkdown"}>
+              <Tabs
+                defaultValue={
+                  record.useShortlink === false ? "markdown" : "shortMarkdown"
+                }
+              >
                 <TabsList>
                   <TabsTrigger value="markdown">Markdown</TabsTrigger>
                   <TabsTrigger value="link">链接</TabsTrigger>
-                  {(record.useShortlink === undefined || record.useShortlink === true) && (
+                  {(record.useShortlink === undefined ||
+                    record.useShortlink === true) && (
                     <>
-                      <TabsTrigger value="shortMarkdown">短Markdown</TabsTrigger>
+                      <TabsTrigger value="shortMarkdown">
+                        短Markdown
+                      </TabsTrigger>
                       <TabsTrigger value="shortLink">短链接</TabsTrigger>
                     </>
                   )}
                 </TabsList>
                 {(() => {
-                  type TabType = "markdown" | "link" | "shortMarkdown" | "shortLink";
+                  type TabType =
+                    | "markdown"
+                    | "link"
+                    | "shortMarkdown"
+                    | "shortLink";
                   const tabs: TabType[] = ["markdown", "link"];
-                  if (record.useShortlink === undefined || record.useShortlink === true) {
+                  if (
+                    record.useShortlink === undefined ||
+                    record.useShortlink === true
+                  ) {
                     tabs.push("shortMarkdown", "shortLink");
                   }
                   return tabs.map((tab) => (

@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { CloudArrowUpIcon } from "@heroicons/react/24/outline";
 import { useState, useRef, DragEvent, ChangeEvent, useEffect } from "react";
-import Image from "next/image";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -290,11 +289,10 @@ export default function UploadForm({ TurnstileKey }: Props) {
                 className="relative group flex flex-col items-center"
               >
                 <div className="w-full aspect-square max-h-[140px] relative overflow-hidden rounded-md">
-                  <Image
+                  <img
                     src={URL.createObjectURL(file)}
                     alt={file.name}
-                    fill
-                    className="object-contain"
+                    className="w-full h-full object-contain"
                   />
                 </div>
                 <Button
@@ -353,9 +351,9 @@ export default function UploadForm({ TurnstileKey }: Props) {
       </div>
 
       <div className="flex items-center space-x-2 mt-2">
-        <Checkbox 
-          id="useShortlink" 
-          checked={useShortlink} 
+        <Checkbox
+          id="useShortlink"
+          checked={useShortlink}
           onCheckedChange={(checked) => setUseShortlink(checked === true)}
         />
         <label
@@ -401,11 +399,9 @@ export default function UploadForm({ TurnstileKey }: Props) {
                 key={result.data?.id!}
                 className="border border-dashed p-2 flex gap-2"
               >
-                <Image
+                <img
                   src={result.data?.url!}
                   alt={result.file.name}
-                  width={100}
-                  height={0}
                   style={{
                     width: "100px",
                     height: "auto",
@@ -414,22 +410,32 @@ export default function UploadForm({ TurnstileKey }: Props) {
                   }}
                 />
                 <div className="grow">
-                  <Tabs defaultValue={(result.data?.useShortlink ?? true) ? "shortMarkdown" : "markdown"}>
+                  <Tabs
+                    defaultValue={
+                      result.data?.useShortlink ?? true
+                        ? "shortMarkdown"
+                        : "markdown"
+                    }
+                  >
                     <TabsList>
                       <TabsTrigger value="markdown">Markdown</TabsTrigger>
                       <TabsTrigger value="link">链接</TabsTrigger>
-                        {result.data?.useShortlink && (
+                      {result.data?.useShortlink && (
                         <>
                           <TabsTrigger value="shortMarkdown">
-                          短Markdown
+                            短Markdown
                           </TabsTrigger>
                           <TabsTrigger value="shortLink">短链接</TabsTrigger>
                         </>
-                        )}
+                      )}
                     </TabsList>
-                    {(
-                      ["markdown", "link", ...(result.data?.useShortlink ? ["shortMarkdown", "shortLink"] : [])]
-                    ).map((tab) => (
+                    {[
+                      "markdown",
+                      "link",
+                      ...(result.data?.useShortlink
+                        ? ["shortMarkdown", "shortLink"]
+                        : []),
+                    ].map((tab) => (
                       <TabsContent key={tab} value={tab}>
                         <div className="flex gap-2">
                           <Input
