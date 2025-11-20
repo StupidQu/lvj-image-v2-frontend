@@ -10,7 +10,11 @@ type SendCodeResponse = {
   message?: string;
 };
 
-export default function EmailCodeField() {
+type EmailCodeFieldProps = {
+  username: string;
+};
+
+export default function EmailCodeField({ username }: EmailCodeFieldProps) {
   const [email, setEmail] = useState("");
   const [countdown, setCountdown] = useState(0);
   const [sending, setSending] = useState(false);
@@ -57,7 +61,7 @@ export default function EmailCodeField() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, username }),
       });
 
       const data: SendCodeResponse = await res.json();

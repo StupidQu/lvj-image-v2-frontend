@@ -12,8 +12,9 @@ import { toast } from "sonner";
 import { UploadRecord } from "@/type/UploadRecord";
 import { buildLink } from "@/lib/buildLink";
 import Turnstile, { useTurnstile } from "react-turnstile";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type UploadResult = {
   file: File;
@@ -26,7 +27,6 @@ type Props = {
   TurnstileKey: string;
 };
 
-// 创建一个工具函数来合并 classNames
 const cn = (...inputs: Parameters<typeof clsx>) => {
   return twMerge(clsx(inputs));
 };
@@ -36,35 +36,50 @@ export default function UploadForm({ TurnstileKey }: Props) {
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [useShortlink, setUseShortlink] = useState(true); // 默认启用短链接
+  const [useShortlink, setUseShortlink] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [containerHeight, setContainerHeight] = useState("h-[300px]");
   const [showResults, setShowResults] = useState(false);
 
   const tokenRef = useRef<string | null>(null);
   const turnstile = useTurnstile();
+  const [needsTurnstile, setNeedsTurnstile] = useState<boolean | null>(null);
 
-  // 计算基于图片数量的容器高度
+  useEffect(() => {
+    const checkTurnstile = async () => {
+      try {
+        const res = await fetch("/api/upload/challenge");
+        if (res.ok) {
+          const data = await res.json();
+          setNeedsTurnstile(data.turnstile);
+        } else {
+          setNeedsTurnstile(true);
+        }
+      } catch (error) {
+        console.error("无法检查验证码状态:", error);
+        setNeedsTurnstile(true);
+      }
+    };
+
+    checkTurnstile();
+  }, []);
+
   useEffect(() => {
     if (selectedFiles.length === 0) {
       setContainerHeight("h-[300px]");
       return;
     }
 
-    // 计算需要多少行来显示所有图片
-    // 假设每行显示 5 个图片（基于 grid-cols-5），每个图片高度约 180px（包括图片和文件名）
     const itemsPerRow = 5;
-    const itemHeight = 180; // 单个图片项的高度，包括图片和文件名（px）
+    const itemHeight = 180;
     const rows = Math.ceil(selectedFiles.length / itemsPerRow);
-    const padding = 32; // 考虑 padding，单位 px
+    const padding = 32;
 
-    // 计算所需的总高度
     const calculatedHeight = Math.max(200, rows * itemHeight + padding);
 
     setContainerHeight(`h-[${calculatedHeight}px]`);
   }, [selectedFiles.length]);
 
-  // 添加粘贴事件监听器
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -77,11 +92,9 @@ export default function UploadForm({ TurnstileKey }: Props) {
 
       if (imageItems.length === 0) return;
 
-      // 处理粘贴的图片
       imageItems.forEach((item) => {
         const file = item.getAsFile();
         if (file) {
-          // 生成唯一的文件名
           const timestamp = new Date().getTime();
           const newFile = new File(
             [file],
@@ -102,10 +115,8 @@ export default function UploadForm({ TurnstileKey }: Props) {
       });
     };
 
-    // 添加全局粘贴事件监听
     window.addEventListener("paste", handlePaste);
 
-    // 清理函数
     return () => {
       window.removeEventListener("paste", handlePaste);
     };
@@ -148,16 +159,13 @@ export default function UploadForm({ TurnstileKey }: Props) {
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
 
-    // 检查 Turnstile Token
-    if (!tokenRef.current) {
+    if (needsTurnstile === true && !tokenRef.current) {
       toast.error("请先完成人机验证");
       return;
     }
 
-    // 设置上传状态为true
     setIsUploading(true);
 
-    // 设置所有文件为上传中状态
     setUploadResults((prev) =>
       prev.map((result) => ({ ...result, status: "pending" as const }))
     );
@@ -167,10 +175,8 @@ export default function UploadForm({ TurnstileKey }: Props) {
       formData.append("file", file);
     });
 
-    // 添加 Turnstile Token
-    formData.append("turnstileToken", tokenRef.current);
+    formData.append("turnstileToken", tokenRef.current || "");
 
-    // 添加短链接访问选项
     formData.append("useShortlink", String(useShortlink));
 
     try {
@@ -182,7 +188,6 @@ export default function UploadForm({ TurnstileKey }: Props) {
       const data = await response.json();
 
       if (!response.ok) {
-        // 处理错误
         setUploadResults((prev) =>
           prev.map((result) => ({
             ...result,
@@ -193,11 +198,9 @@ export default function UploadForm({ TurnstileKey }: Props) {
         return;
       }
 
-      // 处理成功响应
       const uploadRecords = data as UploadRecord[];
       setUploadResults((prev) =>
         prev.map((result, index) => {
-          // 确保我们有匹配的记录
           if (index < uploadRecords.length) {
             return {
               ...result,
@@ -209,17 +212,13 @@ export default function UploadForm({ TurnstileKey }: Props) {
         })
       );
 
-      // 显示结果区域
       setShowResults(true);
 
-      // 上传成功后清空拖拽区域内显示的图片
       setSelectedFiles([]);
-      // 重置文件输入框的值
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     } catch (error) {
-      // 处理网络错误
       setUploadResults((prev) =>
         prev.map((result) => ({
           ...result,
@@ -228,10 +227,10 @@ export default function UploadForm({ TurnstileKey }: Props) {
         }))
       );
     } finally {
-      // 无论成功或失败，都将上传状态设置为false
       setIsUploading(false);
-      // 重置 Turnstile
-      turnstile.reset();
+      if (needsTurnstile && turnstile) {
+        turnstile.reset();
+      }
     }
   };
 
@@ -239,7 +238,6 @@ export default function UploadForm({ TurnstileKey }: Props) {
     setSelectedFiles([]);
     setUploadResults([]);
     setShowResults(false);
-    // 重置文件输入框的值
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -248,13 +246,11 @@ export default function UploadForm({ TurnstileKey }: Props) {
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
     setUploadResults((prev) => prev.filter((_, i) => i !== index));
-    // 重置文件输入框的值，以便可以再次选择相同的文件
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  // 获取成功上传的结果
   const successResults = uploadResults.filter(
     (result) => result.status === "success" && result.data
   );
@@ -265,7 +261,6 @@ export default function UploadForm({ TurnstileKey }: Props) {
         className={cn(
           "border border-dashed w-full flex flex-col items-center justify-center gap-2 cursor-pointer relative",
           containerHeight,
-          // 只有在没有选择文件并且正在拖拽时才改变背景颜色
           selectedFiles.length === 0 && [
             "hover:bg-accent/80 transition-colors duration-100",
             isDragging && "bg-accent/60",
@@ -360,16 +355,35 @@ export default function UploadForm({ TurnstileKey }: Props) {
           htmlFor="useShortlink"
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
-          启用短链访问
+          启用短链访问（图片可能会被其他人看到）
         </label>
       </div>
 
-      <Turnstile
-        sitekey={TurnstileKey}
-        onVerify={(token) => {
-          tokenRef.current = token;
-        }}
-      />
+      {needsTurnstile === null && (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          正在检查安全环境...
+        </div>
+      )}
+
+      {needsTurnstile === true && (
+        <Turnstile
+          sitekey={TurnstileKey}
+          onVerify={(token) => {
+            tokenRef.current = token;
+          }}
+        />
+      )}
+
+      {needsTurnstile === false && (
+        <Alert className="bg-green-50 border-green-200 text-green-900">
+          <ShieldCheck className="size-4 !text-green-600" />
+          <AlertTitle>无需验证</AlertTitle>
+          <AlertDescription className="text-green-700">
+            根据你的历史行为分析，本次上传无需验证码。
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex mt-4 gap-2">
         <Button

@@ -8,7 +8,10 @@ type SendCodeResponse = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = (await req.json()) as { email?: string };
+    const { email, username } = (await req.json()) as {
+      email?: string;
+      username?: string;
+    };
 
     if (!email) {
       return NextResponse.json(
@@ -17,8 +20,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!username) {
+      return NextResponse.json(
+        { success: false, message: "用户名不能为空" satisfies string },
+        { status: 400 }
+      );
+    }
+
     const response = await request.Post<SendCodeResponse>("/auth/send-code", {
       email,
+      username,
     });
 
     return NextResponse.json(response);
